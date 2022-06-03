@@ -1,0 +1,61 @@
+%dw 2.0
+output application/xml
+ns ns0 http://xmlns.ECT.Emerson.com/SendRemittanceAdviceInEBM
+ns ns01 http://xmlns.ECT.Emerson.com/SendRemittanceAdviceInEBO
+---
+{
+	ns0#SendRemittanceAdviceInEBM: {
+		(payload.TransactionSets.v004010."820" map ( v820 , indexOfV820 ) -> {
+			ns0#DataArea: {
+				ns0#REMADVData: {
+					ns01#TraceNumber: v820.Heading."035_TRN".TRN02 default "", 
+					ns01#Currency: v820.Heading."040_CUR".CUR02 default "", 
+					ns01#CustEDIID: v820.Interchange.ISA06 default "",
+					
+					ns01#EDIReceiverID: v820.Interchange.ISA08 default "",
+		
+					(v820.Heading."070_N1_Loop" map(value,index)->{
+						(if ( value."070_N1".N101=="PE" ) ns01#PayeeName: value."070_N1".N102 else null),
+						(if ( value."070_N1".N101=="PR" ) ns01#PayerName: value."070_N1".N102 else null), 
+						(if ( value."070_N1".N101=="RI" ) ns01#RemitToName: value."070_N1".N102 else null), 
+					}),
+					ns01#RemAdviceItemDetail: { //For array of an array always use map of map(right way)
+						
+				ns01#CustEDIID: v820.Interchange.ISA06 default "",
+						
+						(v820.Detail."010_ENT_Loop" map(value1,index1)->{
+							(value1."150_RMR_Loop" map(value2,index2)->{
+								ns01#REFQualifier: value2."150_RMR".RMR01, 
+								ns01#REFNumber: value2."150_RMR".RMR02, 
+								ns01#NetAmount: value2."150_RMR".RMR04, 
+								ns01#TotalAmountBeforeDisc: value2."150_RMR".RMR05, 
+									ns01#Note:value2."160_NTE".NTE02,
+								ns01#TotalAmountAfterDisc: value2."150_RMR".RMR06,
+								
+								
+								ns01#AdjustmentReasonCode: value2."150_RMR".RMR07,
+								
+								//ns01#InvoiceDate:value2."180_DTM"[0].DTM02 as String {format : "yyyyMMdd"},//NOT RIGHT WAY+CANT UNDERSTAND
+								
+									
+								(value2."180_DTM" map(value9,index9)->{
+									ns01#InvoiceDate:value9.DTM02 as String {format : "yyyyMMdd"},//RIGHT WAY
+									}),
+								
+							
+								
+								(value2."170_REF" map(value3,index3)->{
+									(if ( value3.REF01 =="PO" ) ns01#PONumber: value3.REF02  else null), 
+									(if ( value3.REF01 =="VV" ) ns01#VoucherNumber: value3.REF02  else null),
+								
+								
+								})
+							})
+						}),
+					},
+				}
+			}
+		})
+	}
+}
+
